@@ -1,0 +1,45 @@
+{
+    "compilerOptions": {
+        "composite": true,
+        "target": "esnext",
+        "useDefineForClassFields": true,
+        "module": "esnext",
+        "moduleResolution": "node",
+        "strict": false,
+        "jsx": "preserve",
+        "sourceMap": true,
+        "resolveJsonModule": true,
+        "esModuleInterop": true,
+        "lib": ["esnext", "dom"],
+        "baseUrl": "./",
+        "allowJs": true,
+        "forceConsistentCasingInFileNames": true,
+        "allowSyntheticDefaultImports": true,
+        "strictFunctionTypes": false,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "experimentalDecorators": true,
+        "noImplicitAny": false,
+        "skipLibCheck": true,
+        "paths": {
+            "@/*": ["src/*"]
+        },
+        "types": [
+            "@intlify/unplugin-vue-i18n/types",
+            "vite/client",
+            "element-plus/global",
+            "@types/qrcode",
+            "vite-plugin-svg-icons/client"
+        ]
+    },
+    // "include": [
+    //     "types/**/*.d.ts",
+    //     // "src",
+    //     "mock/**/*.ts",
+    //     "src/**/*.ts",
+    //     "src/**/*.vue",
+    //     "uno.config.ts",
+    // ],
+    "include": ["src", "types/**/*.d.ts", "mock/**/*.ts", "types/index.ts", "src/constants/*.ts"],
+    "exclude": ["src/**/__tests__/*"]
+}
