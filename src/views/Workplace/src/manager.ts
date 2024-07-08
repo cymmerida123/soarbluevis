@@ -758,7 +758,7 @@ class GraphManager {
                 await nextTick()
                 this.graph.centerContent()
             }
-        } catch (e) {}
+        } catch (e) { }
     }
 
     skip_graph_update = false // 跳过图更新事件
@@ -1364,7 +1364,7 @@ class GraphManager {
                 await this.initData(this.graph_id)
                 ElMessage.success('已恢复默认')
             })
-            .catch(() => {})
+            .catch(() => { })
     }
 
     project_filepath: string = ''
@@ -1586,8 +1586,8 @@ class GraphManager {
             const x =
                 payload.center.x +
                 (item.level_index - (level_count[item.level] - 1) / 2) *
-                    ((this.config.auto_generate_graph_interval.x * 1.3 * max_level_count) /
-                        level_count[item.level])
+                ((this.config.auto_generate_graph_interval.x * 1.3 * max_level_count) /
+                    level_count[item.level])
             const node = item.node
             const node_unique_key = node.data.type + '-' + node.data.key
             const bn = node_dict[node_unique_key]
