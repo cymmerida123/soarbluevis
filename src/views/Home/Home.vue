@@ -13,7 +13,9 @@ import { Refresh } from '@element-plus/icons-vue'
 import type { GraphModelData } from '@/api/types'
 import { useRouter } from 'vue-router'
 import { downloadText } from '@/utils'
+import { useStore } from 'vuex'
 
+const stores = useStore()
 const router = useRouter()
 const tableRef = ref<any>()
 const selection = ref<GraphModelData[]>([])
@@ -120,11 +122,6 @@ const onEdit = async (graph: any) => {
     router.push({
         path: `/${graph.type}/${graph.id}`
     })
-
-    // let routerData = router.resolve({
-    //     path: `/${graph.type}/${graph.id}`
-    // })
-    // window.open(routerData.href, '_blank')
 }
 
 // 将时间格式化为XXXX-XX-XX XX:XX:XX

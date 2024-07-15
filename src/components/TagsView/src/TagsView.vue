@@ -14,6 +14,9 @@ import { ElScrollbar } from 'element-plus'
 import { useScrollTo } from '@/hooks/event/useScrollTo'
 import { useTagsView } from '@/hooks/web/useTagsView'
 import { cloneDeep } from 'lodash-es'
+import { useStore } from 'vuex'
+
+const stores = useStore() // 全局vuex状态，便于快速获取type和id
 
 const { getPrefixCls } = useDesign()
 
@@ -129,7 +132,9 @@ const moveToCurrentTag = async () => {
             if (v.fullPath !== unref(currentRoute).fullPath) {
                 tagsViewStore.updateVisitedView(unref(currentRoute))
             }
-
+            // console.log('v.fullPath', v.fullPath.split('/')[1])
+            stores.commit('updateType', v.fullPath.split('/')[1])
+            stores.commit('updateId', v.fullPath.split('/')[2])
             break
         }
     }

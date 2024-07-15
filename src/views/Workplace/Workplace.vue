@@ -4,72 +4,94 @@ import { ref, reactive, watch } from 'vue'
 import { GraphManager } from './src/manager'
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { getTeleport } from '@antv/x6-vue-shape'
-import NodeEditor from './src/NodeEditor.vue'
-import EdgeEditor from './src/EdgeEditor.vue'
-import WorkplaceGuide from './src/WorkplaceGuide.vue'
-import { useDesign } from '@/hooks/web/useDesign'
-import Dialog from '@/components/Dialog/src/Dialog.vue'
-import CreateParam from './CreateParam.vue'
-import WorkplaceToolbar from './src/WorkplaceToolbar.vue'
-import WorkplaceMapbar from './src/WorkplaceMapbar.vue'
-import WorkplaceEnvPanel from './src/WorkplaceEnvPanel.vue'
 import { onUnmounted, computed, nextTick } from 'vue'
-
-const TeleportContainer = getTeleport() // 获取Teleport容器，用于渲染节点
+import { useRouter } from 'vue-router'
+import { useTagsViewStore } from '@/store/modules/tagsView'
+import { useStore } from 'vuex'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getOptimListApi } from '@/api'
+const stores = useStore() // 全局vuex状态，便于快速获取type和id
 const route = useRoute() // 获取路由参数
 const sidebar = ref(null) // 侧边栏
-const content = ref(null) // 内容区
-const minimap = ref(null) // 缩略图
 const manager = reactive(new GraphManager()) // 图管理器
 const sidebarMenu = ref(null) // 侧边栏菜单
 const designTitle = ref(null) // 侧边栏标题
 const sidebarHeight = ref(0) // 侧边栏高度
 const designTitleHeight = ref(0) // 侧边栏标题高度
+const tagsViewStore = useTagsViewStore()
+const router = useRouter()
+const getCaches = computed((): string[] => {
+    return tagsViewStore.getCachedViews
+})
 
-const { getPrefixCls } = useDesign()
-const prefixCls = getPrefixCls('dialog')
-
-const visibilitychangeListener = () => {
-    manager.onVisibleChage(document.visibilityState == 'visible')
-}
+// 用于切换子页面：行为设计和优化记录
 
 const PageState = ref('BehaviorDesign')
-const changePageState = async (state) => {
-    const pastState = PageState.value
-    if (state !== pastState && state !== 'BehaviorDesign') {
+const changePageState = async (state: string, id: number) => {
+    stores.commit('getType')
+    stores.commit('getId')
+    if (state !== 'BehaviorDesign') {
         await manager.onSave({ toast: false, change_title: true })
+        router.push({
+            path: `/${stores.state.type}/${stores.state.graph_id}/optim_records/${id}`
+        })
     }
     PageState.value = state
     await nextTick()
-    if (state !== pastState && state === 'BehaviorDesign') {
-        manager.initView(
-            route.path,
-            route.params.id,
-            sidebar.value,
-            content.value,
-            minimap.value,
-            route.query.parent_graph_id,
-            route.query.parent_node_id
-        )
+    if (state === 'BehaviorDesign') {
+        router.push({
+            path: `/${stores.state.type}/${stores.state.graph_id}`
+        })
+    }
+}
+const sidebarStyle = computed(() => {
+    console.log('sidebarHeight', sidebarHeight.value, designTitleHeight.value)
+    return {
+        height: `calc(${sidebarHeight.value}px - 2*${designTitleHeight.value}px)` // 使用计算得到的高度
+    }
+})
+const checkState = computed(() => {
+    stores.commit('getType')
+    if (stores.state.type === 'scenario') {
+        return false
+    } else return true
+})
+
+const listData = reactive({
+    total: 100,
+    list: []
+})
+
+const listState = reactive({
+    page: 1,
+    limit: 25,
+    q: ''
+})
+
+// 获取优化记录列表
+const onRefreshList = async () => {
+    try {
+        const res = (
+            await getOptimListApi({
+                page: listState.page,
+                limit: listState.limit,
+                q: listState.q,
+                graph_id: stores.state.graph_id
+            })
+        ).data
+        listData.list = res.list
+        listData.total = res.total
+        console.log('listData', listData)
+    } catch (e) {
+        console.error(e)
+        ElMessage.error(e)
     }
 }
 
 onMounted(async () => {
     // await nextTick()
     console.log('Workplace:onMounted', route.params.id)
-    manager.initView(
-        route.path,
-        route.params.id,
-        sidebar.value,
-        content.value,
-        minimap.value,
-        route.query.parent_graph_id,
-        route.query.parent_node_id
-    )
-
-    document.addEventListener('visibilitychange', visibilitychangeListener)
-
+    onRefreshList()
     if (sidebarMenu.value) {
         sidebarHeight.value = sidebarMenu.value.offsetHeight
     }
@@ -79,17 +101,8 @@ onMounted(async () => {
     console.log('manager-graph', manager.graph)
 })
 
-const sidebarStyle = computed(() => {
-    console.log('sidebarHeight', sidebarHeight.value, designTitleHeight.value)
-    return {
-        height: `calc(${sidebarHeight.value}px - 2*${designTitleHeight.value}px)` // 使用计算得到的高度
-    }
-})
-
 onUnmounted(async () => {
     console.log('Workplace:onUnmounted')
-    document.removeEventListener('visibilitychange', visibilitychangeListener)
-    manager.destroy()
 })
 
 watch(
@@ -120,13 +133,13 @@ watch(
 <template>
     <section class="workplace" ref="sidebarMenu">
         <el-menu
-            default-active="2"
+            default-active="1"
             class="sidebar"
             v-show="manager.sidebar_visible"
             :collapse-transition="false"
             :unique-opened="true"
         >
-            <el-sub-menu index="1" @click="changePageState('BehaviorDesign')">
+            <el-sub-menu index="1" @click="changePageState('BehaviorDesign', 0)">
                 <template #title>
                     <div ref="designTitle">
                         <el-icon><EditPen /></el-icon>
@@ -136,132 +149,29 @@ watch(
                 <div ref="sidebar" class="stencil-container" :style="sidebarStyle"></div>
             </el-sub-menu>
 
-            <el-sub-menu index="2-1">
+            <el-sub-menu index="2-1" :disabled="checkState">
                 <template #title>
                     <el-icon><Histogram /></el-icon>
-                    <span>参数优化</span>
+                    <span>优化记录</span>
                 </template>
-                <el-menu-item index="2-1" @click="changePageState('CreateParam')">
-                    <el-icon><DocumentAdd /></el-icon>
-                    <span>创建优化</span>
-                </el-menu-item>
-                <el-menu-item index="2-2">
+                <el-menu-item
+                    v-for="item in listData.list"
+                    :key="item.optim_id"
+                    @click="changePageState('ParamRecord', item.optim_id)"
+                >
                     <el-icon><Document /></el-icon>
-                    <span>优化历史</span>
+                    <span>{{ item.optim_name }}</span>
                 </el-menu-item>
             </el-sub-menu>
         </el-menu>
 
-        <!-- <div class="sidebar" ref="sidebar" v-show="manager.sidebar_visible"></div> -->
-        <div v-if="PageState === 'CreateParam'" class="contentParam">
-            <CreateParam :manager="manager" />
-        </div>
-
-        <div v-if="PageState === 'BehaviorDesign'">
-            <div
-                class="content"
-                :class="{
-                    'sidebar-active': manager.sidebar_visible,
-                    'infobar-active': manager.infobar_visible
-                }"
-            >
-                <div ref="content"></div>
-                <TeleportContainer />
-                <WorkplaceToolbar :manager="manager" />
-
-                <WorkplaceMapbar :manager="manager" />
-            </div>
-
-            <div class="infobar" v-if="manager.infobar_visible">
-                <template
-                    v-if="
-                        manager.selected_node &&
-                        manager.selected_node_data &&
-                        manager.selected == 'node'
-                    "
-                >
-                    <NodeEditor
-                        v-model="manager.selected_node_data"
-                        :exec-status="manager.selected_status"
-                        :graph-id="manager.graph_id"
-                        :manager="manager"
-                    />
-                </template>
-                <template
-                    v-else-if="
-                        manager.selected_edge &&
-                        manager.selected_edge_data &&
-                        manager.selected == 'edge'
-                    "
-                >
-                    <EdgeEditor
-                        v-model="manager.selected_edge_data"
-                        :exec-status="manager.selected_status"
-                    />
-                </template>
-                <template v-else>
-                    <div>
-                        <el-input v-model="manager.graph_data.name" placeholder="名称">
-                            <template #prepend
-                                ><span v-if="manager.graph_data.type == 'scenario'">图</span
-                                ><span v-else>图</span>名</template
-                            >
-                        </el-input>
-                        <el-input
-                            v-model="manager.graph_data.desc"
-                            :rows="2"
-                            type="textarea"
-                            placeholder="请输入描述文本"
-                            :autosize="{ minRows: 2, maxRows: 6 }"
-                        >
-                            <template #prepend>描述</template>
-                        </el-input>
-                    </div>
-                    <el-tabs v-model="manager.infobar_active_tab" stretch>
-                        <el-tab-pane label="环境变量" name="env">
-                            <WorkplaceEnvPanel :manager="manager" />
-                        </el-tab-pane>
-                        <el-tab-pane label="引导" name="guide">
-                            <WorkplaceGuide />
-                        </el-tab-pane>
-                        <!-- <el-tab-pane label="运行" name="execution">
-                        <WorkplaceExecution :record="manager.exec_info" />
-                    </el-tab-pane> -->
-                    </el-tabs>
-                </template>
-            </div>
-            <div class="minimap" ref="minimap" v-if="false"></div>
-
-            <Dialog
-                v-model="manager.open_project_dialog_visible"
-                width="500px"
-                max-height="170px"
-                :class="prefixCls"
-                title="已成功生成项目"
-            >
-                <div class="flex flex-col items-center flex-wrap">
-                    <span
-                        class="text-14px my-10px text-[var(--top-header-text-color)]"
-                        style="white-space: normal; word-wrap: break-word"
-                    >
-                        项目路径: {{ manager.project_filepath }}
-                    </span>
-                </div>
-                <template #footer>
-                    <!-- <el-button type="primary" @click="manager.openProject('')">默认程序打开</el-button>
-                <el-button type="primary" @click="manager.openProject('vscode')"
-                    >VsCode打开</el-button
-                > -->
-                    <el-button type="primary" @click="manager.openProject('wizard')"
-                        >Wizard打开</el-button
-                    >
-                    <el-button type="primary" @click="manager.onStartExec()">Warlock运行</el-button>
-                    <el-button @click="manager.open_project_dialog_visible = false"
-                        >取 消</el-button
-                    >
-                </template>
-            </Dialog>
-        </div>
+        <router-view :manager="manager" :sidebar="sidebar">
+            <template #default="{ Component, route }">
+                <keep-alive :include="getCaches">
+                    <component :is="Component" :key="route.fullPath" />
+                </keep-alive>
+            </template>
+        </router-view>
     </section>
 </template>
 
@@ -310,79 +220,6 @@ watch(
             overflow: auto;
             border: 1px solid #ddd;
         }
-    }
-
-    .infobar {
-        width: @infobar-width;
-        height: 100%;
-        border: right 1px solid var(--border-color);
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        background-color: info-color;
-        border-left: 1px solid var(--el-border-color);
-    }
-
-    .mapbar {
-        position: absolute;
-        top: 24px;
-        right: 24px;
-        width: @mapbar-width;
-        display: flex;
-        flex-wrap: nowrap;
-        flex-direction: column;
-        justify-content: flex-start;
-        align-items: center;
-    }
-
-    .content {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        right: @infobar-width;
-    }
-
-    .contentParam {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        left: @sidebar-width;
-        top: 0;
-        bottom: 0;
-        right: 0;
-        padding: 20px;
-    }
-
-    .content.infobar-active {
-        width: calc(100% - @infobar-width);
-    }
-    .content.sidebar-active {
-        left: @sidebar-width;
-        width: calc(100% - @sidebar-width);
-    }
-    .content.infobar-active.sidebar-active {
-        left: @sidebar-width;
-        width: calc(100% - @sidebar-width - @infobar-width);
-    }
-
-    .minimap {
-        position: absolute;
-        top: 12px;
-        right: calc(@infobar-width + 12px);
-        width: 200px;
-        height: 150px;
-    }
-
-    .x6-widget-minimap-viewport {
-        border: 2px solid #8f8f8f;
-    }
-
-    .x6-widget-minimap-viewport-zoom {
-        border: 2px solid #8f8f8f;
     }
 }
 

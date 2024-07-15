@@ -61,7 +61,7 @@ export const constantRouterMap: AppRouteRecordRaw[] = [
         ]
     },
     {
-        path: '/scenario/:id',
+        path: '/scenario',
         component: Layout,
         name: 'Scenario',
         meta: {
@@ -69,7 +69,7 @@ export const constantRouterMap: AppRouteRecordRaw[] = [
         },
         children: [
             {
-                path: '',
+                path: ':id',
                 component: () => import('@/views/Workplace/Workplace.vue'),
                 name: 'ScenarioIndex',
                 meta: {
@@ -77,12 +77,38 @@ export const constantRouterMap: AppRouteRecordRaw[] = [
                     icon: 'svg-icon:dashboard-filled',
                     hidden: true,
                     noCache: true
-                }
+                },
+                children: [
+                    {
+                        path: '',
+                        component: () => import('@/views/Workplace/BehaviorDesign.vue'),
+                        name: 'ScenarioBehaviorDesign',
+                        props: true,
+                        meta: {
+                            title: t('router.scenario'),
+                            icon: 'svg-icon:dashboard-filled',
+                            hidden: true,
+                            noCache: true
+                        }
+                    },
+                    {
+                        path: 'optim_records/:optim_id',
+                        component: () => import('@/views/Workplace/ParamRecord.vue'),
+                        name: 'ScenarioOptimRecords',
+                        props: true,
+                        meta: {
+                            title: t('router.scenario'),
+                            icon: 'svg-icon:dashboard-filled',
+                            hidden: true,
+                            noCache: true
+                        }
+                    }
+                ]
             }
         ]
     },
     {
-        path: '/nest/:id',
+        path: '/nest',
         component: Layout,
         name: 'Nest',
         meta: {
@@ -90,7 +116,7 @@ export const constantRouterMap: AppRouteRecordRaw[] = [
         },
         children: [
             {
-                path: '',
+                path: ':id',
                 component: () => import('@/views/Workplace/Workplace.vue'),
                 name: 'NestIndex',
                 meta: {
@@ -98,7 +124,21 @@ export const constantRouterMap: AppRouteRecordRaw[] = [
                     icon: 'svg-icon:dashboard-filled',
                     hidden: true,
                     noCache: true
-                }
+                },
+                children: [
+                    {
+                        path: '',
+                        component: () => import('@/views/Workplace/BehaviorDesign.vue'),
+                        name: 'NestBehaviorDesign',
+                        props: true,
+                        meta: {
+                            title: t('router.nest'),
+                            icon: 'svg-icon:dashboard-filled',
+                            hidden: true,
+                            noCache: true
+                        }
+                    }
+                ]
             }
         ]
     },

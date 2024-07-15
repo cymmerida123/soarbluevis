@@ -10,7 +10,11 @@ import type {
     ExecInfo,
     StencilConfigResponse,
     GetUIConfigResponse,
-    GetConfigResponse
+    GetConfigResponse,
+    GetOptimListParams,
+    GetOptimListResponse,
+    OptimTotalItem,
+    OptimNewItem
 } from './types'
 
 export function getGraphListApi(
@@ -182,4 +186,40 @@ export function resetNodeApi(data: {
     node_id: any
 }): Promise<IResponse<{ env: string }>> {
     return request.post({ url: 'reset_node', data })
+}
+
+// # 接口: 创建参数优化
+// # POST /api/create_optim
+export function createOptimApi(data: {
+    graph_id: any
+    params: any
+    target: any
+    paramfile_name: any
+}): Promise<IResponse<{ optim_id: string }>> {
+    return request.post({ url: 'create_optim', data })
+}
+
+// # 接口: 获取特定场景图的参数记录列表
+// # GET /api/get_optim_list
+export function getOptimListApi(
+    params: GetOptimListParams
+): Promise<IResponse<GetOptimListResponse>> {
+    return request.get({ url: 'get_optim_list', params })
+}
+
+// # 接口: 获取特定参数记录的历史列表
+// # GET /api/get_optim_detail
+export function getOptimDetailApi(params: {
+    optim_id: string
+}): Promise<IResponse<OptimTotalItem>> {
+    return request.get({ url: 'get_optim_detail', params })
+}
+
+// # 接口: 获取特定参数记录的实时仿真数据
+// # GET /api/get_realtime_data
+export function getOptimNewApi(params: {
+    optim_id: string
+    ack: number
+}): Promise<IResponse<OptimNewItem>> {
+    return request.get({ url: 'get_realtime_data', params })
 }

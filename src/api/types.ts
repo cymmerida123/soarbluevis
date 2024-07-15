@@ -1,3 +1,5 @@
+import exp from 'constants'
+
 export interface GraphModelData {
     id: string
     name: string
@@ -36,7 +38,7 @@ export interface GetGraphListParams {
     type: string
 }
 
-export interface GetGraphListResponse extends ListResponseData<GraphModelData> {}
+export interface GetGraphListResponse extends ListResponseData<GraphModelData> { }
 
 export interface GetGraphDetailParams {
     graph_id: any
@@ -44,7 +46,7 @@ export interface GetGraphDetailParams {
     parent_node_id: any
 }
 
-export interface GetGraphDetailResponse extends GraphModelData {}
+export interface GetGraphDetailResponse extends GraphModelData { }
 
 export interface CreateGraphParams {
     name: string
@@ -125,3 +127,35 @@ export interface GetConfigResponse {
     dev: boolean
     auto_generate_graph_interval: { x: number; y: number }
 }
+
+export interface OptimItem {
+    optim_id: string
+    optim_name: string
+}
+
+export interface GetOptimListParams {
+    page: number
+    limit: number
+    q: string
+    graph_id: string
+}
+
+export interface OptimDetailItem {
+    steps: number[]
+    targets: number[]
+    params: any
+    target_name: string
+}
+
+export interface OptimTotalItem {
+    optim_data: OptimDetailItem[]
+    graph_data: GraphModelData
+    is_terminal: boolean
+}
+
+export interface OptimNewItem {
+    optim_data: OptimDetailItem[]
+    is_terminal: boolean
+}
+
+export interface GetOptimListResponse extends ListResponseData<OptimItem> { }

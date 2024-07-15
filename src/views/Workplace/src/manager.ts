@@ -9,6 +9,7 @@ import { MiniMap } from '@antv/x6-plugin-minimap'
 import { Export } from '@antv/x6-plugin-export'
 import { Stencil } from '@antv/x6-plugin-stencil'
 import insertCss from 'insert-css'
+import { computed } from 'vue'
 
 import {
     getGraphDetailApi,
@@ -28,7 +29,8 @@ import {
     resetGraphEnvApi,
     resetNodeApi,
     exportGraphDbApi,
-    importGraphDbApi
+    importGraphDbApi,
+    createOptimApi
 } from '@/api'
 import type { ExecInfo, GetConfigResponse, StencilConfigResponse } from '@/api/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -46,7 +48,6 @@ import {
 import { EXEC_STATUS } from './constants'
 import { TreeNode, createEmptyTreeNode } from './types'
 import { useTagsViewStore } from '@/store/modules/tagsView'
-
 import router from '@/router'
 import { root } from 'postcss'
 const tagsViewStore = useTagsViewStore()
@@ -162,7 +163,6 @@ class GraphManager {
 
     sidebar_visible: boolean = true
     infobar_visible: boolean = true
-    infobar_active_tab: string = 'env'
 
     config: GetConfigResponse = {
         project_name: '',
@@ -193,6 +193,11 @@ class GraphManager {
         deleted: 0,
         node_count: 0,
         edge_count: 0
+    }
+
+    infobar_active_tab = 'param'
+    change_infobar_active_tab(tab: string) {
+        this.infobar_active_tab = tab === 'scenario' ? 'param' : 'env'
     }
 
     delaySave: any = null
@@ -228,6 +233,7 @@ class GraphManager {
         }
     }
 
+    optim_path = ''
     async initView(
         route_path: string,
         graph_id: any,
@@ -240,7 +246,7 @@ class GraphManager {
         console.log('initView', route_path, graph_id, sidebar, content, minimap)
         this.route_path = route_path
         this.graph_id = graph_id
-
+        this.optim_path = graph_id + '/optim_records'
         this.parent_graph_id = parent_graph_id
         this.parent_node_id = parent_node_id
         this.sidebar = sidebar
@@ -745,7 +751,6 @@ class GraphManager {
             } else {
                 ElMessage.error('线上的图数据格式错误')
             }
-
             this.onGraphUpdate({ is_modified: false })
 
             if (document.title != this.graph_data.name) {
@@ -1757,6 +1762,96 @@ class GraphManager {
                 bounding.bottomCenter.y +
                 platform_node.height / 2 +
                 this.config.auto_generate_graph_interval.y
+        }
+    }
+
+    paramfile_name = ''
+    optim_id = ''
+    open_param_dialog_visible = false
+    async onCreateOptim(treeRef, target) {
+        // 判断是否有仿真在运行
+        // console.log('this.exec_info.status', this.exec_info.status)
+        // if (this.exec_info.status == EXEC_STATUS.RUNNING) {
+        //     ElMessage.info('已有仿真在运行中，请稍后')
+        //     return
+        // }
+        // 判断是否选择了优化目标和参数
+        if (treeRef == undefined && target == '') {
+            ElMessage.error('请选择优化目标和参数')
+            return
+        }
+        if (target == '') {
+            ElMessage.error('请选择优化目标')
+            return
+        }
+        if (treeRef == undefined) {
+            ElMessage.error('请选择优化参数')
+            return
+        }
+        const paramRes = treeRef.map((it) => {
+            return it.slice(-2)
+        })
+
+        // 重新创建仿真项目
+        const valid = await this.onValidate({ toast: false })
+        if (!valid) {
+            return
+        }
+        await ElMessageBox.confirm('新建优化需要先创建项目', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning',
+            center: true
+        })
+        try {
+            const { filepath } = (
+                await generateProjectApi({
+                    graph_id: this.graph_data.id
+                })
+            ).data
+            this.project_filepath = filepath
+        } catch (e) {
+            console.error(e)
+            ElMessage.error(e)
+        }
+        // 为优化记录命名
+        await ElMessageBox.prompt('请为优化记录命名', '新建参数优化', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            inputValidator: (value) => {
+                if (!value) {
+                    return '名称不能为空' // 返回错误消息字符串
+                }
+                return true // 返回 true 表示验证通过
+            }
+        })
+            .then(({ value }) => {
+                ElMessage({
+                    type: 'success',
+                    message: `最终的优化记录名称为:${value + '_' + Date.now()}`
+                })
+                this.paramfile_name = value + '_' + Date.now()
+            })
+            .catch(() => {
+                ElMessage({
+                    type: 'info',
+                    message: '输入取消'
+                })
+            })
+
+        try {
+            const optim_data = {
+                graph_id: this.graph_data.id,
+                params: JSON.stringify(paramRes),
+                target: target,
+                paramfile_name: this.paramfile_name
+            }
+            this.optim_id = (await createOptimApi(optim_data)).data.optim_id
+            console.log('已发送优化参数：', optim_data, ';已接收优化记录id', this.optim_id)
+            this.open_param_dialog_visible = true
+        } catch (e) {
+            console.error(e)
+            ElMessage.error(e)
         }
     }
 }

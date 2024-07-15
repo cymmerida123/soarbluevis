@@ -25,11 +25,11 @@ import { setupRouter } from './router'
 // 权限
 import { setupPermission } from './directives'
 
-
+import "../mock/workplace/mock.js"
 
 import { createApp } from "vue";
 import "element-plus/dist/index.css";
-
+import stores from './stores/type.ts'
 import App from "./App.vue";
 
 import './permission'
@@ -50,7 +50,7 @@ const setupAll = async () => {
 
   setupPermission(app)
 
-
+  app.use(stores)
   app.mount('#app')
 }
 
