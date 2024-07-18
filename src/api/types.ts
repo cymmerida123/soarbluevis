@@ -151,6 +151,7 @@ export interface OptimTotalItem {
     optim_data: OptimDetailItem[]
     graph_data: GraphModelData
     is_terminal: boolean
+    optim_name: string
 }
 
 export interface OptimNewItem {

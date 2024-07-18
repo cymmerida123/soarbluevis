@@ -12,13 +12,13 @@ import {
 import type { OptimDetailItem } from '@/api/types'
 import { ParamManager } from './src/paramManager'
 import * as echarts from 'echarts'
-import { smooth } from '@antv/x6/lib/registry/connector/smooth'
-import { ta } from 'element-plus/es/locale'
-import { is } from '@/utils/is'
-const name = ['asd', 'qwe']
+import { useTagsViewStore } from '@/store/modules/tagsView'
+import { useRoute } from 'vue-router'
 const { proxy } = getCurrentInstance()
 const props = defineProps(['manager', 'sidebar'])
 const manager = computed(() => props.manager)
+const tagsViewStore = useTagsViewStore()
+const route = useRoute()
 const paramManager = reactive(new ParamManager(proxy.$route.params.optim_id)) // 优化记录管理器
 function show() {
     console.log('show', manager.value)
@@ -34,6 +34,10 @@ const isTerminal = ref(false)
 const flag = ref(0)
 const getChartData = async () => {
     optim_data.value = await paramManager.getOptimDetail()
+    if (document.title != paramManager.optim_name) {
+        document.title = paramManager.optim_name
+        tagsViewStore.setTitle(paramManager.optim_name, route.path)
+    }
     console.log('manager-optim', optim_data.value, target_names.value)
     await nextTick()
     optim_data.value.forEach((data, index) => {
@@ -57,23 +61,30 @@ const getChartData = async () => {
             },
             // 提示框
             tooltip: {
-                trigger: 'axis',
+                // trigger: 'axis',
                 axisPointer: {
                     type: 'cross',
                     animation: false
                 },
                 formatter: function (params) {
-                    console.log('params', params)
-                    var param = params[0]
-                    return (
-                        '时间: ' +
-                        param.value[0] +
-                        '<br/>' +
-                        '数值: ' +
-                        param.value[1] +
-                        '<br/>' +
-                        param.data.extraInfo
-                    )
+                    try {
+                        // var param = params[0]
+                        if (Array.isArray(params)) {
+                            params = params[0]
+                        }
+                        return (
+                            '时间: ' +
+                            params.value[0] +
+                            '<br/>' +
+                            '数值: ' +
+                            params.value[1] +
+                            '<br/>' +
+                            params.data.extraInfo
+                        )
+                    } catch (error) {
+                        console.error('error', error)
+                        return error.message
+                    }
                 }
             },
             xAxis: {

@@ -260,7 +260,8 @@ export default {
                     node_count: 55,
                     edge_count: 16
                 },
-                is_terminal: false
+                is_terminal: false,
+                optim_name: '记录1'
             },
             code: 0,
             message: 'success'

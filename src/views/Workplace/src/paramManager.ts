@@ -19,6 +19,7 @@ class ParamManager {
     optim_id: string
     optim_data: OptimDetailItem[]
     isTerminal: boolean = false
+    optim_name: string = ''
     constructor(id: string) {
         this.optim_id = id
     }
@@ -27,6 +28,7 @@ class ParamManager {
         this.graph_data = res.graph_data
         this.optim_data = res.optim_data
         this.isTerminal = res.is_terminal
+        this.optim_name = res.optim_name
         for (const li of res.optim_data) {
             if (li.steps.length !== li.params.length || li.targets.length !== li.params.length) {
                 ElMessage.error(`${this.optim_id}-${li.target_name}:inconsistent data length`)
